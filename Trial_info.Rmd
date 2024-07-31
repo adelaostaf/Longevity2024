@@ -1,0 +1,76 @@
+---
+title: "Trial info"
+author: "2919813_Longevity2024"
+date: "2024-07-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(tidyr)
+```
+
+## Setting up the dataset
+
+```{r }
+trial_info <- readr::read_csv("trial_info.csv", col_names = TRUE) 
+
+names(trial_info)[1] = c("Hits")
+names(trial_info)[2] = c("Miss")
+trial_info$Participant <- 1:nrow(trial_info)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r }
+# pivot data longer
+long_data <- trial_info %>%
+  pivot_longer(cols = -Participant, 
+               names_to = c("Outcome", "Condition"), 
+               names_sep = "_", 
+               values_to = "Count")
+```
+
+```{r}
+statistics <- long_data %>%
+  group_by(Participant, Outcome) %>%
+  summarise(
+    Total = sum(Count),
+    Mean = mean(Count),
+    SD = sd(Count)
+  )
+
+# View the calculated statistics
+print(statistics)
+
+mean(statistics$Total[statistics$Outcome == "Misses"]) %>% print()
+mean(statistics$Total[statistics$Outcome == "Hits"]) %>% print()
+
+sd(statistics$Total[statistics$Outcome == "Misses"]) %>% print()
+sd(statistics$Total[statistics$Outcome == "Hits"]) %>% print()
+
+```
+```{r}
+statistics1 <- long_data %>%
+  group_by(Participant, Outcome, Condition) %>%
+  summarise(
+    Total = sum(Count),
+    Mean = mean(Count),
+    SD = sd(Count)
+  )
+
+# View the calculated statistics
+print(statistics1)
+
+mean(statistics$Total[statistics$Outcome == "Misses"]) %>% print()
+mean(statistics$Total[statistics$Outcome == "Hits"]) %>% print()
+
+sd(statistics$Total[statistics$Outcome == "Misses"]) %>% print()
+sd(statistics$Total[statistics$Outcome == "Hits"]) %>% print()
+
+```
+
