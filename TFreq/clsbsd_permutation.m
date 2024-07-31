@@ -31,7 +31,7 @@ rng(457); % You can use any integer as the seed value
 cfg = [];
 cfg.channel          = 'all';
 cfg.latency          = 'all';
-cfg.frequency        = [8 20]; % Frequency of interest 
+cfg.frequency        = [8 30]; % Frequency of interest 
 
 cfg.statistic        = 'ft_statfun_depsamplesT';
 cfg.alpha            = .05;
