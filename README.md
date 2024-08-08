@@ -7,6 +7,7 @@ Abstract: Prior studies suggest that an alpha/beta power decrease during encodin
 Author: Adela-Maria Ostaf ( as graduate student of Brain Sciences at University of Glasgow )
 University: Glasgow University
 Contact information: adelamariaost@gmail.com
+Project Supervisor: Simon Hanslmayr Simon.Hanslmayr@glasgow.ac.uk
 ## Methods: 
 EEG; multisensory rhythmic stimulation; memory association task; Fourier Transform; non-parametric cluster permutation test 
 ## Files:
