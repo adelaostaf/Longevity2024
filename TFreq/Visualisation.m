@@ -8,15 +8,18 @@ layout = ft_prepare_layout(cfg);
 %% Time-frequency for individual data (multiplot, singleplot)
 % Load Data 
 cd(tfr_data_file) % go to folder 
-s36 = load('subj36_tfr_miss.mat'); % subject file
+s33 = load('subj33_tfr_miss.mat'); % subject file
 
-% Configuration
+% Configuration topoplot alpha/beta
 cfg=[];
 cfg.zlim = [-0.7 0.7];
 cfg.colorbar = 'yes';
 cfg.colormap = cm;
+cfg.foi = [8 30]; 
+cfg.toi = [0 3]; 
 
-ft_multiplotTFR(cfg,s36.tfr_miss_baseline);
+ft_topoplotTFR(cfg,s33.tfr_miss_baseline);
+ft_singleplotTFR(cfg,s33.tfr_miss_baseline);
 
 %% Time-frequency and Topoplot for grand average
 % Load Data 
@@ -30,8 +33,8 @@ cfg.zlim=[-0.5 0.5];
 cfg.layout = ['biosemi128.lay'];
 cfg.channel = 'all'; 
 cfg.colorbar = 'yes';
-cfg.foilim = [8 20]; % doesn't work
-cfg.toilim = [0 3]; % doesn't work
+cfg.foi = [8 30]; % doesn't work
+cfg.toi = [0 4]; % doesn't work
 cfg.colormap = cm;
 
 ft_singleplotTFR(cfg,GA_hits);
@@ -40,14 +43,15 @@ ft_singleplotTFR(cfg,GA_miss);
 % Configuration multiplot_TFR
 cfg=[];
 cfg.zlim=[-0.5 0.5];
-cfg.xlim= [-1 4];
+cfg.xlim= [0 3];
+cfg.ylim = [8 20];
 cfg.layout = ['biosemi128.lay'];
 cfg.channel = 'all'; 
 cfg.colorbar = 'yes';
 cfg.colormap = cm;
 
-ft_multiplotTFR(cfg,GA_hits);
-ft_multiplotTFR(cfg,GA_miss);
+ft_topoplotTFR(cfg,GA_hits);
+ft_topoplotTFR(cfg,GA_miss);
 
 
 %% Time-frequency and Topoplot for differences between conditions
@@ -58,12 +62,16 @@ GA_sme.powspctrm = GA_hits.powspctrm - GA_miss.powspctrm;
 
 cfg=[];
 cfg.zlim=[-0.15 0.15];
+cfg.xlim= [0 4];
+cfg.ylim = [8 30];
 cfg.layout = ['biosemi128.lay'];
 cfg.channel = 'all'; 
 cfg.colorbar = 'yes';
 cfg.colormap = cm;
 
-ft_multiplotTFR(cfg, GA_sme);
+ft_singleplotTFR(cfg,GA_sme);
+ft_topoplotTFR(cfg, GA_sme);
+
 
 % cfg.maskparameter = [-0.05 0.05];
 % cfg.maskstyle = 'outline';
@@ -128,7 +136,7 @@ cfg.parameter = 'powspctrm';
 cfg.xlim = [-1 3];
 cfg.ylim = [-0.5 0.5];
 cfg.channel = 'A30';
-cfg.foi = [8 20]; % does it even do smth
+cfg.foi = [8 30]; 
 
 figure;
 ft_singleplotER(cfg, tfr_hits_all{:});
@@ -140,7 +148,12 @@ cfg = [];
 cfg.xlim = [-1 3];
 cfg.ylim = [-0.5 0.5];
 cfg.channel = 'A30';
-cfg.foi = [8 20]; % does it even do smth
+cfg.foi = [8 30]; 
+
+figure;
+ft_singleplotER(cfg, GA_miss); 
+ft_singleplotER(cfg, GA_hits);
+
 
 figure;
 ft_singleplotER(cfg, GA_miss); 
