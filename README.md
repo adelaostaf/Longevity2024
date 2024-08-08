@@ -8,7 +8,7 @@ Author: Adela-Maria Ostaf ( as graduate student of Brain Sciences at University 
 University: Glasgow University
 Contact information: adelamariaost@gmail.com
 ## Methods: 
-EEG; multisensory rhythmic stimulation; memory association task; Fourier Transform, non-parametric cluster permutation test 
+EEG; multisensory rhythmic stimulation; memory association task; Fourier Transform; non-parametric cluster permutation test 
 ## Files:
 Tfreq: folder with scripts used for Time Frequency Decomposition non-parametric cluster based permutation
 
