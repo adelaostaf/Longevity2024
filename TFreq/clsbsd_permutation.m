@@ -55,6 +55,7 @@ cfg.minnbchan        = 3; % justify why this was the case, nr neighbours that ex
 cfg.clustertail      = -1;  % one-sided test
 
 [stat] = ft_freqstatistics(cfg, tfr_hits_all{:},tfr_miss_all{:});
+%% Identify significant clusters
 
 % cd('H:\data\')
 % save cluster stat
@@ -75,24 +76,136 @@ if isfield(stat, 'posclusterslabelmat')
 end
 % 1 neg sig cluster found
 
-%% to know cluster extension
-% to do for each significant cluster
 
-clear c* onset_cl end_cl e* on*
-clall= find(pow_negcluster==1);
+%% Extract unique channels, frequencies, and timepoints for the current cluster
+clall = find(pow_negcluster == 1);
 [cx_chan, cy_freq, cz_time] = ind2sub(size(pow_negcluster), clall);
 
-% to know which channels belong to the cluster
-chans_idx = intersect(1:length(stat.label),cx_chan);
-clust_chans = stat.label(chans_idx);
+% Initialize cell arrays to store results for each cluster
+cluster_channels = {};
+cluster_frequencies = {};
+cluster_timepoints = {};
 
-% to know which frequencies belong to the cluster
-chans_idy = intersect(1:length(stat.freq),cy_freq);
-clust_freq = stat.freq(chans_idy);
+% Create a structure to store the detailed information
+cluster_info = struct('ClusterID', [], 'Timepoint', [], 'Channels', [], 'Frequencies', []);
 
-% to know which timepoints belong to the cluster
-chans_idz = intersect(1:length(stat.time),cz_time);
-clust_time = stat.time(chans_idz);
+% Loop through each significant cluster
+unique_clusters = unique(pow_negcluster(clall));
+for i = 1:length(unique_clusters)
+    cluster_id = unique_clusters(i);
+    
+    % Find all indices belonging to the current cluster
+    current_cluster_indices = find(pow_negcluster == cluster_id);
+    [current_cx_chan, current_cy_freq, current_cz_time] = ind2sub(size(pow_negcluster), current_cluster_indices);
+    
+    % Extract unique channels, frequencies, and timepoints for the current cluster
+    chans_idx = unique(current_cx_chan);
+    clust_chans = stat.label(chans_idx);
+    
+    chans_idy = unique(current_cy_freq);
+    clust_freq = stat.freq(chans_idy);
+    
+    chans_idz = unique(current_cz_time);
+    clust_time = stat.time(chans_idz);
+    
+    % Store the results in cell arrays
+    cluster_channels{i} = clust_chans;
+    cluster_frequencies{i} = clust_freq;
+    cluster_timepoints{i} = clust_time;
+    
+    % Display the overview for the current cluster
+    fprintf('Cluster %d:\n', cluster_id);
+    
+    % For each timepoint in the cluster, display the contributing channels and frequencies
+    unique_times_in_cluster = unique(current_cz_time);
+    for t = 1:length(unique_times_in_cluster)
+        time_idx = unique_times_in_cluster(t);
+        relevant_indices = find(current_cz_time == time_idx);
+        relevant_chans = unique(current_cx_chan(relevant_indices));
+        relevant_freqs = unique(current_cy_freq(relevant_indices));
+        
+        fprintf('Timepoint: %.3f\n', stat.time(time_idx));
+        fprintf('Channels contributing:\n');
+        disp(stat.label(relevant_chans));
+        fprintf('Frequencies contributing:\n');
+        disp(stat.freq(relevant_freqs));
+        
+        % Add information to the structure
+        new_entry = struct('ClusterID', cluster_id, 'Timepoint', stat.time(time_idx), ...
+                           'Channels', {stat.label(relevant_chans)}, 'Frequencies', {stat.freq(relevant_freqs)});
+        cluster_info = [cluster_info; new_entry];
+    end
+    
+    fprintf('-------------------------\n');
+end
+
+% Convert the structure to a table
+cluster_table = struct2table(cluster_info);
+
+% Save the structure as a MAT file
+clustter_filename = fullfile(exp_folder, 'results', 'Adela', 'trialinfo.mat');
+save(clustter_filename, 'cluster_info');
+
+%% To compute mean, sd, 95% CI for negative cluster 
+
+% Initialize arrays to store statistics for significant clusters
+mean_hits = [];
+mean_misses = [];
+std_hits = [];
+std_misses = [];
+sem_hits = [];
+sem_misses = [];
+ci_diff = [];
+
+% Extract data points from the significant negative cluster
+if any(pow_negcluster(:))
+    % Identify all significant clusters
+    clall = find(pow_negcluster == 1);
+    [cx_chan, cy_freq, cz_time] = ind2sub(size(pow_negcluster), clall);
+    
+    % Extract the power values from the significant cluster for hits and misses
+    sig_cluster_data_hits = [];
+    sig_cluster_data_misses = [];
+    for i = 1:length(clall)
+        sig_cluster_data_hits = [sig_cluster_data_hits; tfr_hits_all{1}.powspctrm(cx_chan(i), cy_freq(i), cz_time(i))];
+        sig_cluster_data_misses = [sig_cluster_data_misses; tfr_miss_all{1}.powspctrm(cx_chan(i), cy_freq(i), cz_time(i))];
+    end
+    
+    % Compute mean, standard deviation, and SEM for hits and misses
+    mean_hits = mean(sig_cluster_data_hits);
+    mean_misses = mean(sig_cluster_data_misses);
+    
+    std_hits = std(sig_cluster_data_hits);
+    std_misses = std(sig_cluster_data_misses);
+    
+    sem_hits = std_hits / sqrt(length(sig_cluster_data_hits));
+    sem_misses = std_misses / sqrt(length(sig_cluster_data_misses));
+    
+    % Compute the difference in means
+    mean_diff = mean_hits - mean_misses;
+    
+    % Compute the standard error of the difference
+    sem_diff = sqrt(sem_hits^2 + sem_misses^2);
+    
+    % Compute the 95% CI for the difference in means
+    alpha = 0.05;
+    t_crit = tinv(1 - alpha/2, length(sig_cluster_data_hits) + length(sig_cluster_data_misses) - 2);
+    ci_diff = [mean_diff - t_crit * sem_diff, mean_diff + t_crit * sem_diff];
+end
+
+% Display the results
+disp('Negative Significant Cluster Statistics:');
+disp(['Mean (Hits): ', num2str(mean_hits)]);
+disp(['Mean (Misses): ', num2str(mean_misses)]);
+disp(['Mean Difference: ', num2str(mean_diff)]);
+disp(['Standard Deviation (Hits): ', num2str(std_hits)]);
+disp(['Standard Deviation (Misses): ', num2str(std_misses)]);
+disp(['Standard Error of the Mean (Hits): ', num2str(sem_hits)]);
+disp(['Standard Error of the Mean (Misses): ', num2str(sem_misses)]);
+disp(['Standard Error of the Difference: ', num2str(sem_diff)]);
+disp(['95% CI for Difference: [', num2str(ci_diff(1)), ', ', num2str(ci_diff(2)), ']']);
+
+
 %% Extract t-values for significant cluster points
 t_values_cluster = zeros(length(clall), 4); % Initialize a matrix to hold t-values and their corresponding indices
 for i = 1:length(clall)
@@ -168,7 +281,7 @@ for tp = tpcluster % Create a topography for each time point within the cluster
     plotcluster.time = plotcluster.time(tp);
     plotcluster.freq = plotcluster.freq(freqcluster);
 
-    subplot(4,4,it)
+    subplot(1,1,it)
     cfg                  = [];
     cfg.layout           = 'biosemi128.lay';
     cfg.parameter        = 'powspctrm';
@@ -184,9 +297,9 @@ for tp = tpcluster % Create a topography for each time point within the cluster
     ft_topoplotTFR(cfg,plotcluster)
     
 
-    title([num2str(round(plotcluster.time,2)) ' s; '])
+    title([num2str(round(plotcluster.time,2)) ' sec '])
 
-    if it == 16
+    if it == 1
         it = 1;
         figure
     else
@@ -195,22 +308,55 @@ for tp = tpcluster % Create a topography for each time point within the cluster
 
 end 
 
-%% Plot probability matrix: Error using image
+%% Alternative to plotting to save each figure individually
+% Initialize the figure counter
+it = 1;
 
-% Color data must be an m-by-n-by-3 or m-by-n matrix.
-figure;
-imagesc ( stat.time,0:400, -log10(stat.prob))
-colorbar
-%% Plot spatial distribution of EEG channels part of the largest cluster: Does not show
-cfg = [];
-cfg.style     = 'blank';
-cfg.layout    = 'biosemi128.lay';
-cfg.highlight = 'on';
-cfg.highlightchannel = find(any(stat.mask,2));
-cfg.comment   = 'no';
-figure; ft_topoplotER(cfg, GA_miss)
-title('Nonparametric: significant with cluster-based multiple comparison correction')
-%% Experiment Mapping effect: Doesnt work
+% Directory to save the figures
+save_dir = 'Z:/longevity_2024/results/Adela/cluster_tpoplots'; % Specify the directory where you want to save the figures
+
+for tp = tpcluster % Create a topography for each time point within the cluster
+    temp_cluster = data_cluster(:,:,tp);
+
+    % Find channels and frequencies included in the cluster in each time point
+    [chcluster, freqcluster] = find(temp_cluster);
+    chcluster = unique(chcluster);
+    freqcluster = unique(freqcluster);
+
+    plotcluster = subtraction2;
+    plotcluster.powspctrm = plotcluster.powspctrm(:,freqcluster,tp);
+    plotcluster.time = plotcluster.time(tp);
+    plotcluster.freq = plotcluster.freq(freqcluster);
+
+    % Create a new figure for each topography
+    figure;
+    cfg                  = [];
+    cfg.layout           = 'biosemi128.lay';
+    cfg.parameter        = 'powspctrm';
+    cfg.marker           = 'off';
+    cfg.highlight        = 'on';
+    cfg.highlightsymbol  = '.';
+    cfg.highlightchannel = chcluster;
+    cfg.highlightcolor   = [0 0 0];
+    cfg.figure           = 'gca';
+    cfg.highlightsize    = 7;
+    cfg.colormap         = cm; 
+    cfg.zlim             =[-0.1 0.1];
+    ft_topoplotTFR(cfg,plotcluster)
+
+    title([num2str(round(plotcluster.time, 2)) ' s ']);
+
+    % Define the filename and save the figure as a PNG
+    filename = fullfile(save_dir, sprintf('topography_%02d.png', it));
+    saveas(gcf, filename);
+
+    % Close the figure after saving to free up memory
+    close(gcf);
+
+    it = it + 1;
+end
+
+%% Calculate Cohen's d
 
 cfg = [];
 cfg.channel = clust_chans;
@@ -226,6 +372,36 @@ cfg.design           = [ones(1, length(tfr_hits_all)) ones(1, length(tfr_miss_al
 
 effect_rectangle = ft_freqstatistics(cfg, tfr_hits_all{:},tfr_miss_all{:});
 disp(effect_rectangle)
+
+%% Identify clustersize
+
+if isfield(stat, 'negclusterslabelmat')
+    % Extract the label matrix for negative clusters
+    neg_clusters_labelmat = stat.negclusterslabelmat;
+
+    % Find the unique cluster labels (excluding 0, which indicates no cluster)
+    unique_neg_labels = unique(neg_clusters_labelmat);
+    unique_neg_labels(unique_neg_labels == 0) = []; % Remove the zero label
+
+    % Initialize a structure to store cluster sizes
+    neg_cluster_sizes = struct();
+
+    % Iterate through each unique cluster label
+    for i = 1:length(unique_neg_labels)
+        label = unique_neg_labels(i);
+        % Calculate the size of the cluster by counting occurrences of the label
+        cluster_size = sum(neg_clusters_labelmat(:) == label);
+        
+        % Store the cluster size in the structure
+        neg_cluster_sizes.(['Cluster_' num2str(label)]) = cluster_size;
+
+        % Display the cluster size
+        fprintf('Negative Cluster %d: Size = %d\n', label, cluster_size);
+    end
+else
+    disp('No negative clusters found.');
+end
+
 
 %% Save structures
 
