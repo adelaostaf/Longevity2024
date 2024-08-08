@@ -7,7 +7,7 @@ Abstract: Prior studies suggest that an alpha/beta power decrease during encodin
 Author: Adela-Maria Ostaf ( as graduate student of Brain Sciences at University of Glasgow )
 University: Glasgow University
 Contact information: adelamariaost@gmail.com
-## Methods: EEG; multisensory rhytmic stimulation; memory association task; Fourier Transform, non-parametric cluster permutation test 
+## Methods: EEG; multisensory rhythmic stimulation; memory association task; Fourier Transform, non-parametric cluster permutation test 
 ## Files:
 Tfreq: folder with scripts used for Time Frequency Decomposition using a Hanning Taper
 study forms: folder with study information sheet, screening questionaire, open brain consent form, privacy notice, consent form. 
